@@ -1,11 +1,14 @@
 from flask import Flask
 from app.extensions import db, migrate, login_manager, csrf
-from app.config import Config
+from app.config import CHARTS_FOLDER, UPLOAD_FOLDER, Config
 from app.models.user import User
 
 def create_app(config_class=Config):
     app = Flask(__name__)
     app.config.from_object(config_class)
+    app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+    app.config['CHART_FOLDER'] = CHARTS_FOLDER
+
     
     # Initialize extensions
     db.init_app(app)

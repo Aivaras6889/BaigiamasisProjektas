@@ -2,6 +2,7 @@ from datetime import datetime
 import os
 import shutil
 import cv2
+from flask import current_app
 import numpy as np
 import tensorflow as tf
 from app.extensions import db, scaler
@@ -201,3 +202,22 @@ def clear_dataset():
     except Exception as e:
         db.session.rollback()
         raise e
+    
+
+def get_dataset_statistics():
+    """Get dataset statistics"""
+    try:
+        total_images = DatasetImage.query.count()
+        num_classes = db.session.query(DatasetImage.class_id).distinct().count()
+        train_images = DatasetImage.query.filter_by(dataset_type='train').count()
+        test_images = DatasetImage.query.filter_by(dataset_type='test').count()
+        
+        return {
+            'total_images': total_images,
+            'num_classes': num_classes,
+            'train_images': train_images,
+            'test_images': test_images
+        }
+    except Exception as e:
+        current_app.logger.error(f"Error getting statistics: {str(e)}")
+        return None

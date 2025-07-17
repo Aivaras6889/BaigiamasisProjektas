@@ -25,11 +25,7 @@
             <a href="{{ url_for('main.index') }}" class="nav-link">Home</a>
           </li>
           {% if current_user.is_authenticated %}
-          <li>
-            <a href="{{ url_for('main.dashboard') }}" class="nav-link"
-              >dashboard</a
-            >
-          </li>
+
             <li>
               <a href="{{ url_for('upload.upload_file') }}" class="nav-link">Upload Images</a>
             
@@ -55,10 +51,6 @@
           </a></li>
                 
 
-
-          <li>
-            <a href="{{ url_for('main.profile') }}" class="nav-link">Profile</a>
-          </li>
           <li>
             <a href="{{ url_for('auth.logout') }}" class="nav-link"
               >Logout ({{ current_user.username }})</a

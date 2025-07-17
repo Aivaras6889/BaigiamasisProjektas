@@ -1,6 +1,6 @@
 from datetime import datetime
 import os
-from flask import Blueprint, render_template, flash, redirect, session, url_for, request
+from flask import Blueprint, current_app, render_template, flash, redirect, session, url_for, request
 from flask_login import login_required, current_user
 from app.extensions import db
 from app.forms.predictions import PredictionForm
@@ -62,160 +62,100 @@ bp = Blueprint('predict', __name__)
 @bp.route('/predict', methods=['GET', 'POST'])
 @login_required
 def predict():
-    """Predict with model and image type selection"""
     form = PredictionForm()
-    
+
     if form.validate_on_submit():
         try:
             model_id = form.model_id.data
             prediction_type = form.prediction_type.data
-            
-            # Get model info to determine how to handle input
+
             model = TrainedModel.query.get(model_id)
             if not model:
-                flash('Selected model not found', 'error')
+                flash('Selected model not found', 'danger')
                 return render_template('predict.html', form=form)
-            
 
+            actual_class = None
+            filepath = ''
+            image_path = ''
 
-            # Handle different prediction types
             if prediction_type == 'upload':
-                # Handle new file upload
-                if not form.image.data:
-                    flash('Please select a file to upload', 'error')
-                    return render_template('predict.html', form=form)
-                
                 file = form.image.data
+                if not file or not file.filename:
+                    flash('Please select a file to upload', 'danger')
+                    return render_template('predict.html', form=form)
+
                 filename = secure_filename(file.filename)
                 timestamp = datetime.now().strftime('%Y%m%d_%H%M%S_')
                 unique_filename = timestamp + filename
-                
-               
 
-
-                upload_dir = 'static/uploads'
-                os.makedirs(upload_dir, exist_ok=True)
+                upload_dir = os.path.join(current_app.static_folder, 'uploads')
                 filepath = os.path.join(upload_dir, unique_filename)
                 file.save(filepath)
-                
-                # Get or create default dataset
+
                 dataset = Dataset.query.first()
                 if not dataset:
-                    dataset = Dataset(
-                        name="Default Dataset",
-                        status='ready',
-                        total_images=0,
-                        num_classes=0
-                    )
+                    dataset = Dataset(name="Default Dataset", status='ready', total_images=0, num_classes=0)
                     db.session.add(dataset)
                     db.session.flush()
-                
-                # Save to database for future use
-                try:
-                    uploaded_image = DatasetImage(
-                        dataset_id=dataset.id,
-                        image_path=f'uploads/{unique_filename}',
-                        class_id=-1,
-                        dataset_type='uploaded'
-                    )
-                    db.session.add(uploaded_image)
-                    db.session.commit()
-                except Exception as db_error:
-                    db.session.rollback()
-                    print(f"Database error: {db_error}")
-                
-                # Determine what to pass to prediction function
-                if model.framework == 'tensorflow' or model.framework == 'pytorch':
-                    # Pass image path for neural networks
-                    result = predict_with_model(model_id, filepath)
-                else:
-                    # Pass HOG features for sklearn/XGBoost/etc
-                    features = extract_features_from_image(filepath)
-                    result = predict_with_model(model_id, features)
-                
-                actual_class = None
-                image_path = f'uploads/{unique_filename}'
-                
+
+                uploaded_image = DatasetImage(
+                    dataset_id=dataset.id,
+                    image_path=f'uploads/{unique_filename}',
+                    class_id=-1,
+                    dataset_type='uploaded'
+                )
+                db.session.add(uploaded_image)
+                db.session.commit()
+
+                image_path = f'static/uploads/{unique_filename}'
+
             elif prediction_type == 'uploaded':
-                # Handle previously uploaded image
-                uploaded_image_id = form.uploaded_image_id.data
-                if not uploaded_image_id:
-                    flash('Please select an uploaded image', 'error')
-                    return render_template('predict.html', form=form)
-                
-                uploaded_image = DatasetImage.query.get_or_404(uploaded_image_id)
-                filepath = os.path.join('static', uploaded_image.image_path)
-                
-                if not os.path.exists(filepath):
-                    flash('Image file not found', 'error')
-                    return render_template('predict.html', form=form)
-                
-                # Determine what to pass to prediction function
-                if model.framework == 'tensorflow' or model.framework == 'pytorch':
-                    result = predict_with_model(model_id, filepath)
-                else:
-                    features = extract_features_from_image(filepath)
-                    result = predict_with_model(model_id, features)
-                
-                actual_class = None
+                uploaded_image = DatasetImage.query.get_or_404(form.uploaded_image_id.data)
                 image_path = uploaded_image.image_path
-                
-            else:  # database
-                # Handle database selection
-                database_image_id = form.database_image_id.data
-                if not database_image_id:
-                    flash('Please select an image from database', 'error')
-                    return render_template('predict.html', form=form)
-                
-                db_image = DatasetImage.query.get_or_404(database_image_id)
-                filepath = os.path.join('static', db_image.image_path)
-                
-                if not os.path.exists(filepath):
-                    flash('Image file not found', 'error')
-                    return render_template('predict.html', form=form)
-                
-                # Determine what to pass to prediction function
-                if model.framework == 'tensorflow' or model.framework == 'pytorch':
-                    result = predict_with_model(model_id, filepath)
-                else:
-                    features = extract_features_from_image(filepath)
-                    result = predict_with_model(model_id, features)
-                
-                actual_class = db_image.class_id  # We know the actual class!
+                filepath = os.path.join(current_app.static_folder, image_path.replace('static/', ''))
+
+            elif prediction_type == 'database':
+                db_image = DatasetImage.query.get_or_404(form.database_image_id.data)
+                actual_class = db_image.class_id
                 image_path = db_image.image_path
-            
-            # Add additional info to result
+                filepath = os.path.join(current_app.static_folder, image_path.replace('static/', ''))
+
+            else:
+                flash('Invalid prediction type.', 'danger')
+                return render_template('predict.html', form=form)
+
+            # Run prediction
+            if model.framework in ['tensorflow', 'pytorch']:
+                result = predict_with_model(model_id, filepath)
+            else:
+                features = extract_features_from_image(filepath)
+                result = predict_with_model(model_id, features)
+
             result['actual_class'] = actual_class
             result['image_path'] = image_path
 
-            try:
-                new_result = Results(
-                    profile_id=current_user.id,
-                    prediction=str(result['prediction']),
-                    confidence=result.get('confidence'),
-                    actual_class=actual_class,
-                    model_name=model.name,  # ✅ Make sure to save model name
-                    image_path=image_path,
-                    prediction_time=result.get('prediction_time', 0)
-                )
-                db.session.add(new_result)
-                db.session.commit()
-                
-                # ✅ Update model performance if we have actual class
-                if actual_class is not None:
-                    save_model_performance(model_id)
-                    
-            except Exception as save_error:
-                print(f"Error saving result: {save_error}")
-                db.session.rollback()
-            
+            new_result = Results(
+                profile_id=current_user.id,
+                prediction=str(result['prediction']),
+                confidence=result.get('confidence'),
+                actual_class=actual_class,
+                model_name=model.name,
+                image_path=image_path,
+                prediction_time=result.get('prediction_time', 0)
+            )
+            db.session.add(new_result)
+            db.session.commit()
+
+            if actual_class is not None:
+                save_model_performance(model_id)
+
             flash('Prediction completed successfully!', 'success')
             return render_template('predict.html', form=form, result=result)
-            
+
         except Exception as e:
-            flash(f'Prediction error: {str(e)}', 'error')
             db.session.rollback()
-    
+            flash(f'Prediction error: {str(e)}', 'danger')
+
     return render_template('predict.html', form=form)
 
 @bp.route('/predict-image', methods=['POST'])

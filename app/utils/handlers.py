@@ -8,6 +8,7 @@ import app
 from werkzeug.utils import secure_filename
 from app.extensions import db
 from app.config import Config
+from app import config
 from app.models.traffic_signs import TrafficSign
 from app.utils.dataset import clear_dataset
 from app.utils.images import load_images_from_directory, save_image_to_dataset
@@ -20,7 +21,7 @@ def save_uploaded_file(file):
     """Save the uploaded file to the upload folder."""
     if file and allowed_file(file.filename):
         filename = secure_filename(file.filename)
-        file_path = os.path.join(Config.UPLOAD_FOLDER, filename)
+        file_path = os.path.join(config.UPLOAD_FOLDER, filename)
         file.save(file_path)
         return file_path, filename
     else:
