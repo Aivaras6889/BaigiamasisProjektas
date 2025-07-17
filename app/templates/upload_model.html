@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}Upload Model{% endblock %}
+
+{% block content %}
+<h2>Upload New Model</h2>
+
+<form method="POST" enctype="multipart/form-data">
+    {{ form.hidden_tag() }}
+    
+    <div class="mb-3">
+        {{ form.model_file.label(class="form-label") }}
+        {{ form.model_file(class="form-control") }}
+        {% if form.model_file.errors %}
+            {% for error in form.model_file.errors %}
+                <small class="text-danger">{{ error }}</small>
+            {% endfor %}
+        {% endif %}
+        <div class="form-text">Supported: .joblib, .pkl, .keras, .h5, .pt, .pth</div>
+    </div>
+    
+    <div class="mb-3">
+        {{ form.model_name.label(class="form-label") }}
+        {{ form.model_name(class="form-control", placeholder="e.g., Traffic_SVM_v1") }}
+        {% if form.model_name.errors %}
+            {% for error in form.model_name.errors %}
+                <small class="text-danger">{{ error }}</small>
+            {% endfor %}
+        {% endif %}
+    </div>
+    
+    <div class="row mb-3">
+        <div class="col-md-6">
+            {{ form.model_type.label(class="form-label") }}
+            {{ form.model_type(class="form-select") }}
+            {% if form.model_type.errors %}
+                {% for error in form.model_type.errors %}
+                    <small class="text-danger">{{ error }}</small>
+                {% endfor %}
+            {% endif %}
+        </div>
+        <div class="col-md-6">
+            {{ form.framework.label(class="form-label") }}
+            {{ form.framework(class="form-select") }}
+            {% if form.framework.errors %}
+                {% for error in form.framework.errors %}
+                    <small class="text-danger">{{ error }}</small>
+                {% endfor %}
+            {% endif %}
+        </div>
+    </div>
+    
+    {{ form.submit(class="btn btn-primary") }}
+    <a href="{{ url_for('models.models_main') }}" class="btn btn-secondary">Cancel</a>
+</form>
+{% endblock %}

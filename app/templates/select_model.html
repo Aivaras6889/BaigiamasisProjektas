@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}Select Model{% endblock %}
+
+{% block content %}
+<h2>Select Existing Model</h2>
+
+{% if models %}
+<form method="POST">
+    {{ form.hidden_tag() }}
+    
+    <div class="mb-3">
+        {{ form.model_id.label(class="form-label") }}
+        {{ form.model_id(class="form-select") }}
+        {% if form.model_id.errors %}
+            {% for error in form.model_id.errors %}
+                <small class="text-danger">{{ error }}</small>
+            {% endfor %}
+        {% endif %}
+    </div>
+    
+    {{ form.submit(class="btn btn-success") }}
+    <a href="{{ url_for('models.models_main') }}" class="btn btn-secondary">Back</a>
+</form>
+
+<!-- Model List -->
+<div class="mt-4">
+    <h6>Available Models ({{ models|length }})</h6>
+    {% for model in models %}
+    <div class="card mb-2">
+        <div class="card-body">
+            <h6 class="mb-1">{{ model.name }}</h6>
+            <small class="text-muted">
+                {{ model.model_type|replace('_', ' ')|title }} | {{ model.framework|title }}
+            </small>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+{% else %}
+<div class="text-center py-5">
+    <h4>No Models Found</h4>
+    <a href="{{ url_for('models.upload_form') }}" class="btn btn-primary">Upload Your First Model</a>
+</div>
+{% endif %}
+{% endblock %}

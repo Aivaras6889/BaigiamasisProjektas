@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% block title %}Predict{% endblock %}
+
+{% block content %}
+<h2>Traffic Sign Prediction</h2>
+
+<form method="POST" enctype="multipart/form-data">
+    {{ form.hidden_tag() }}
+
+    <div class="mb-3">
+        {{ form.model_id.label(class="form-label") }}
+        {{ form.model_id(class="form-select") }}
+    </div>
+
+    <div class="mb-3">
+        {{ form.prediction_type.label(class="form-label") }}
+        {{ form.prediction_type(class="form-select", onchange="togglePredictionType()") }}
+    </div>
+
+    <div id="upload-section" class="mb-3">
+        {{ form.image.label(class="form-label") }}
+        {{ form.image(class="form-control") }}
+    </div>
+
+    <div id="uploaded-section" class="mb-3" style="display: none;">
+        {{ form.uploaded_image_id.label(class="form-label") }}
+        {{ form.uploaded_image_id(class="form-select") }}
+    </div>
+
+    <div id="database-section" class="mb-3" style="display: none;">
+        {{ form.database_image_id.label(class="form-label") }}
+        {{ form.database_image_id(class="form-select") }}
+    </div>
+
+    {{ form.submit(class="btn btn-success btn-lg") }}
+</form>
+
+{% if result %}
+<div class="mt-4 card">
+    <div class="card-header bg-success text-white">
+        <h5>Prediction Result</h5>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-6">
+                {% if result.image_path %}
+                <img src="{{ url_for('static', filename=result.image_path) }}" 
+                     class="img-fluid rounded" alt="Predicted Image" style="max-height: 300px;">
+                {% endif %}
+            </div>
+            <div class="col-md-6">
+                <h3>Prediction: <span class="badge bg-primary fs-4">{{ result.prediction }}</span></h3>
+                {% if result.confidence %}
+                <p>Confidence: 
+                    <span class="badge bg-{{ 'success' if result.confidence > 0.8 else 'warning' if result.confidence > 0.6 else 'danger' }}">
+                        {{ "%.1f"|format(result.confidence * 100) }}%
+                    </span>
+                </p>
+                {% endif %}
+                <p><strong>Model:</strong> {{ result.model_name }}</p>
+                <p><strong>Type:</strong> {{ result.model_type|replace('_', ' ')|title }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+function togglePredictionType() {
+    const type = document.querySelector('select[name="prediction_type"]').value;
+    document.getElementById('upload-section').style.display = (type === 'upload') ? 'block' : 'none';
+    document.getElementById('uploaded-section').style.display = (type === 'uploaded') ? 'block' : 'none';
+    document.getElementById('database-section').style.display = (type === 'database') ? 'block' : 'none';
+}
+document.addEventListener('DOMContentLoaded', togglePredictionType);
+</script>
+{% endblock %}

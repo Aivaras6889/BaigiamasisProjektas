@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ 'danger' if category == 'danger' else 'success' if category == 'success' else 'warning' }} alert-dismissible fade show" role="alert">
+                    <i class="fas fa-{{ 'exclamation-triangle' if category == 'danger' else 'check-circle' if category == 'success' else 'exclamation-circle' }}"></i>
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <div class="row">
+        <!-- Dataset Statistics -->
+        {% if stats %}
+        <div class="col-md-4">
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="fas fa-chart-bar"></i> Dataset Statistics</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-6">
+                            <h4 class="text-primary">{{ stats.total_images or 0 }}</h4>
+                            <small class="text-muted">Total Images</small>
+                        </div>
+                        <div class="col-6">
+                            <h4 class="text-info">{{ stats.num_classes or 0 }}</h4>
+                            <small class="text-muted">Classes</small>
+                        </div>
+                    </div>
+                    <hr>
+                    <div class="row text-center">
+                        <div class="col-6">
+                            <h5 class="text-success">{{ stats.train_images or 0 }}</h5>
+                            <small class="text-muted">Training</small>
+                        </div>
+                        <div class="col-6">
+                            <h5 class="text-warning">{{ stats.test_images or 0 }}</h5>
+                            <small class="text-muted">Testing</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Upload Form -->
+        <div class="col-md-{{ '8' if stats else '12' }}">
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h2 class="mb-0"><i class="fas fa-cloud-upload-alt"></i> Upload File</h2>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('upload.upload_file') }}" enctype="multipart/form-data">
+                        {{ form.hidden_tag() }}
+                        
+                        <!-- File Upload Section -->
+                        <div class="mb-3">
+                            {{ form.file.label(class="form-label fw-bold") }}
+                            {{ form.file(class="form-control") }}
+                            <div class="form-text">Supported formats: JPG, JPEG, PNG, GIF, BMP, PPM</div>
+                            {% if form.file.errors %}
+                                {% for error in form.file.errors %}
+                                    <div class="text-danger mt-2"><i class="fas fa-exclamation-circle"></i> {{ error }}</div>
+                                {% endfor %}
+                            {% endif %}
+                        </div>
+                        
+                        <div class="row">
+                            <!-- Class ID -->
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ form.class_id.label(class="form-label fw-bold") }}
+                                    {{ form.class_id(class="form-control", placeholder="Enter class ID (e.g., 0, 1, 2...)") }}
+                                    {% if form.class_id.errors %}
+                                        {% for error in form.class_id.errors %}
+                                            <div class="text-danger mt-2"><i class="fas fa-exclamation-circle"></i> {{ error }}</div>
+                                        {% endfor %}
+                                    {% endif %}
+                                </div>
+                            </div>
+                            
+                            <!-- Dataset Type -->
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ form.dataset_type.label(class="form-label fw-bold") }}
+                                    {{ form.dataset_type(class="form-select") }}
+                                    {% if form.dataset_type.errors %}
+                                        {% for error in form.dataset_type.errors %}
+                                            <div class="text-danger mt-2"><i class="fas fa-exclamation-circle"></i> {{ error }}</div>
+                                        {% endfor %}
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Submit Button -->
+                        <div class="d-grid">
+                            {{ form.submit(class="btn btn-success btn-lg") }}
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+{% endblock %}
