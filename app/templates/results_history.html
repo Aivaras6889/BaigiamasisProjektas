@@ -1,0 +1,167 @@
+{% extends "base.html" %}
+{% block title %}Prediction Results{% endblock %}
+
+{% block content %}
+<h2>My Prediction Results</h2>
+
+<!-- Simple Stats -->
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="card text-center">
+            <div class="card-body">
+                <h4>{{ total_results }}</h4>
+                <small>Total Predictions</small>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card text-center">
+            <div class="card-body">
+                <h4>{{ unique_classes|length }}</h4>
+                <small>Unique Classes</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Filter by Predicted Class -->
+<form method="GET" class="mb-4">
+    <div class="row">
+        <div class="col-md-6">
+            <select name="predicted_class" class="form-select">
+                <option value="">All Classes</option>
+                {% for class_name in unique_classes %}
+                <option value="{{ class_name }}" {% if request.args.get('predicted_class') == class_name %}selected{% endif %}>
+                    Class {{ class_name }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-6">
+            <button type="submit" class="btn btn-primary">Filter</button>
+            <a href="{{ url_for('results.results_history') }}" class="btn btn-secondary">Clear</a>
+        </div>
+    </div>
+</form>
+
+<div class="col-md-4">
+    <div class="card text-center">
+        <div class="card-body">
+            <h4>{{ recent_results_count }}</h4>  <!-- ✅ Use the count -->
+            <small>Recent (Last 7 Days)</small>
+        </div>
+    </div>
+</div>
+
+<!-- Results List -->
+{% if results.items %}
+<!-- Simple Stats -->
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card text-center">
+            <div class="card-body">
+                <h4>{{ total_results }}</h4>
+                <small>Total Predictions</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card text-center">
+            <div class="card-body">
+                <h4>{{ unique_classes|length }}</h4>
+                <small>Unique Classes</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+{% for result in results.items %}
+<div class="card mb-3">
+    <div class="card-body">
+        <div class="row align-items-center">
+            <div class="col-md-2">
+{% if result.image_path %}
+                {% if result.image_path.startswith('uploads/') %}
+                    <!-- For uploaded images -->
+                    <img src="{{ url_for('static', filename=result.image_path) }}" 
+                        class="img-fluid" style="max-height: 80px;">
+                {% else %}
+                    <!-- For database images - add static/ prefix if missing -->
+                    {% set img_path = 'static/' + result.image_path if not result.image_path.startswith('static/') else result.image_path %}
+                    <img src="{{ url_for('static', filename=result.image_path.replace('static/', '')) }}" 
+                        class="img-fluid" style="max-height: 80px;">
+                {% endif %}
+            {% else %}
+                <div class="bg-light d-flex align-items-center justify-content-center" style="height: 80px; width: 80px;">
+                    <i class="fas fa-image text-muted"></i>
+                </div>
+            {% endif %}
+            </div>
+            <div class="col-md-10">
+                {% if result.prediction.startswith('{') %}
+                    <!-- JSON stored result -->
+                    {% set data = result.prediction|from_json %}
+                    <h6>
+                        Predicted: <span class="badge bg-primary">Class {{ data.prediction }}</span>
+                        {% if data.actual_class is not none %}
+                        | Actual: <span class="badge bg-secondary">Class {{ data.actual_class }}</span>
+                            {% if data.prediction == data.actual_class %}
+                                <span class="badge bg-success">✓ Correct</span>
+                            {% else %}
+                                <span class="badge bg-danger">✗ Wrong</span>
+                            {% endif %}
+                        {% endif %}
+                    </h6>
+                    <p class="mb-1">
+                        {% if data.confidence %}
+                        <strong>Confidence:</strong> 
+                        <span class="badge bg-{{ 'success' if data.confidence > 0.8 else 'warning' if data.confidence > 0.6 else 'danger' }}">
+                            {{ "%.1f"|format(data.confidence * 100) }}%
+                        </span>
+                        {% endif %}
+                        {% if data.model_name %}
+                        | <strong>Model:</strong> {{ data.model_name }}
+                        {% endif %}
+                    </p>
+                {% else %}
+                    <!-- Simple string result -->
+                    <h6>Predicted: <span class="badge bg-primary">Class {{ result.prediction }}</span></h6>
+                    {% if result.confidence %}
+                    <p class="mb-1">
+                        <strong>Confidence:</strong> {{ "%.1f"|format(result.confidence * 100) }}%
+                    </p>
+                    {% endif %}
+                {% endif %}
+                <small class="text-muted">{{ result.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</small>
+            </div>
+        </div>
+    </div>
+</div>
+{% endfor %}
+
+<!-- Simple Pagination -->
+{% if results.pages > 1 %}
+<div class="text-center">
+    {% if results.has_prev %}
+    <a href="{{ url_for('results.results_history', page=results.prev_num, **request.args) }}" 
+       class="btn btn-outline-primary">Previous</a>
+    {% endif %}
+    
+    Page {{ results.page }} of {{ results.pages }}
+    
+    {% if results.has_next %}
+    <a href="{{ url_for('results.results_history', page=results.next_num, **request.args) }}" 
+       class="btn btn-outline-primary">Next</a>
+    {% endif %}
+</div>
+{% endif %}
+
+{% else %}
+<div class="text-center py-5">
+    <h4>No Results Yet</h4>
+    <a href="{{ url_for('predict.predict') }}" class="btn btn-primary">Start Predicting</a>
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,139 @@
+{% extends "base.html" %}
+{% block title %}Models - Traffic Sign Recognition{% endblock %}
+
+{% block content %}
+<h2><i class="fas fa-brain"></i> Model Management</h2>
+<p class="text-muted">Upload and manage your trained models</p>
+
+<!-- Action Cards -->
+<section class="row mb-4">
+    <div class="col-md-6">
+        <div class="card h-100">
+            <div class="card-body text-center">
+                <i class="fas fa-upload fa-3x text-primary mb-3"></i>
+                <h5 class="card-title">Upload New Model</h5>
+                <p class="card-text text-muted">Upload a trained model file (.joblib, .keras, etc.)</p>
+                <a href="{{ url_for('models.upload_form') }}" class="btn btn-primary">
+                    <i class="fas fa-upload"></i> Upload Model
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card h-100">
+            <div class="card-body text-center">
+                <i class="fas fa-search fa-3x text-success mb-3"></i>
+                <h5 class="card-title">Start Predicting</h5>
+                <p class="card-text text-muted">Use your models to predict traffic signs</p>
+                <a href="{{ url_for('predict.predict') }}" class="btn btn-success">
+                    <i class="fas fa-search"></i> Make Predictions
+                </a>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Quick Stats -->
+<section class="mb-4">
+    <h5><i class="fas fa-chart-bar"></i> Quick Stats</h5>
+    <div class="row">
+        <div class="col-md-3">
+            <div class="card bg-light">
+                <div class="card-body text-center">
+                    <h3 class="text-primary">{{ models|length }}</h3>
+                    <small class="text-muted">Total Models</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-light">
+                <div class="card-body text-center">
+                    <h3 class="text-success">{{ active_models }}</h3>
+                    <small class="text-muted">Active Models</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-light">
+                <div class="card-body text-center">
+                    <h3 class="text-info">{{ frameworks|length }}</h3>
+                    <small class="text-muted">Frameworks</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-light">
+                <div class="card-body text-center">
+                    <h3 class="text-warning">{{ model_types|length }}</h3>
+                    <small class="text-muted">Model Types</small>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Available Models List -->
+{% if models %}
+<section>
+    <h5><i class="fas fa-list"></i> Available Models ({{ models|length }})</h5>
+    
+    {% for model in models %}
+    <div class="card mb-3">
+        <div class="card-body">
+            <div class="row align-items-center">
+                <div class="col">
+                    <h6 class="mb-1">{{ model.name }}</h6>
+                    <small class="text-muted">
+                        {{ model.model_type|replace('_', ' ')|title }} | 
+                        {{ model.framework|title }} | 
+                        Created: {{ model.created_at.strftime('%Y-%m-%d') if model.created_at else 'Unknown' }}
+                    </small>
+                </div>
+                <div class="col-auto">
+                    {% if model.accuracy %}
+                    <span class="badge bg-info">{{ "%.1f"|format(model.accuracy * 100) }}% accuracy</span>
+                    {% endif %}
+                    <span class="badge bg-{{ 'success' if model.is_active else 'secondary' }}">
+                        {{ 'Active' if model.is_active else 'Inactive' }}
+                    </span>
+                </div>
+            </div>
+            
+            <!-- Model Performance -->
+            {% if model.accuracy or model.precision or model.recall %}
+            <div class="mt-2">
+                <small class="text-muted">
+                    {% if model.accuracy %}Accuracy: {{ "%.1f"|format(model.accuracy * 100) }}%{% endif %}
+                    {% if model.precision %} | Precision: {{ "%.1f"|format(model.precision * 100) }}%{% endif %}
+                    {% if model.recall %} | Recall: {{ "%.1f"|format(model.recall * 100) }}%{% endif %}
+                    {% if model.training_samples %} | Samples: {{ "{:,}".format(model.training_samples) }}{% endif %}
+                </small>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    {% endfor %}
+</section>
+
+{% else %}
+<section class="text-center py-5">
+    <i class="fas fa-robot fa-3x text-muted mb-3"></i>
+    <h4>No Models Found</h4>
+    <p class="text-muted">Upload your first model to get started</p>
+    <a href="{{ url_for('models.upload_form') }}" class="btn btn-primary btn-lg">
+        <i class="fas fa-upload"></i> Upload Your First Model
+    </a>
+</section>
+{% endif %}
+
+<!-- Quick Actions -->
+<section class="mt-4 text-center">
+    <a href="{{ url_for('predict.predict') }}" class="btn btn-outline-success">
+        <i class="fas fa-search"></i> Start Predicting
+    </a>
+    <a href="{{ url_for('results.results_history') }}" class="btn btn-outline-info">
+        <i class="fas fa-history"></i> View Prediction History
+    </a>
+</section>
+{% endblock %}

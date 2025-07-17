@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}Real Model Performance{% endblock %}
+
+{% block content %}
+<h2>Real Model Performance</h2>
+
+<!-- Real-time Performance from Predictions -->
+<h4>Live Performance (from actual predictions)</h4>
+{% if model_performance %}
+{% for item in model_performance %}
+<div class="card mb-3">
+    <div class="card-header">
+        <h5>{{ item.model.name }} <small>({{ item.model.model_type }})</small></h5>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-4">
+                <h3>{{ "%.1f"|format(item.performance.accuracy * 100) }}%</h3>
+                <small>Accuracy</small>
+            </div>
+            <div class="col-md-4">
+                <h3>{{ item.performance.correct_predictions }}/{{ item.performance.total_predictions }}</h3>
+                <small>Correct/Total</small>
+            </div>
+            <div class="col-md-4">
+                <h3>{{ "%.1f"|format(item.performance.avg_confidence * 100) }}%</h3>
+                <small>Avg Confidence</small>
+            </div>
+        </div>
+    </div>
+</div>
+{% endfor %}
+{% else %}
+<div class="alert alert-info">
+    No performance data yet. Predict some database images (with known classes) to generate performance metrics.
+</div>
+{% endif %}
+
+<!-- Stored Results -->
+{% if stored_results %}
+<h4 class="mt-4">Stored Results</h4>
+{% for result in stored_results %}
+<div class="card mb-2">
+    <div class="card-body">
+        <strong>{{ result.model_name }}</strong> - 
+        Accuracy: {{ "%.1f"|format(result.accuracy * 100) }}% |
+        {{ result.hyperparameters }}
+    </div>
+</div>
+{% endfor %}
+{% endif %}
+
+<div class="mt-4 text-center">
+    <a href="{{ url_for('predict.predict') }}" class="btn btn-primary">Make Predictions</a>
+    <p class="small text-muted mt-2">Predict database images to generate real performance metrics</p>
+</div>
+{% endblock %}

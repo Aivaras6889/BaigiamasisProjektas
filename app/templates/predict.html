@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+{% block title %}Predict{% endblock %}
+
+{% block content %}
+<h2>Traffic Sign Prediction</h2>
+
+<form method="POST" enctype="multipart/form-data">
+    {{ form.hidden_tag() }}
+    
+    <!-- Model Selection -->
+    <div class="mb-3">
+        {{ form.model_id.label(class="form-label") }}
+        {{ form.model_id(class="form-select") }}
+        {% if form.model_id.errors %}
+            {% for error in form.model_id.errors %}
+                <small class="text-danger">{{ error }}</small>
+            {% endfor %}
+        {% endif %}
+    </div>
+    
+    <!-- Prediction Type Selection -->
+    <div class="mb-3">
+        {{ form.prediction_type.label(class="form-label") }}
+        {{ form.prediction_type(class="form-select", onchange="togglePredictionType()") }}
+    </div>
+    
+    <!-- Upload New Image Section -->
+    <div id="upload-section" class="mb-3">
+        {{ form.image.label(class="form-label") }}
+        {{ form.image(class="form-control") }}
+        {% if form.image.errors %}
+            {% for error in form.image.errors %}
+                <small class="text-danger">{{ error }}</small>
+            {% endfor %}
+        {% endif %}
+        <div class="form-text">Upload a new traffic sign image for prediction</div>
+    </div>
+    
+    <!-- Uploaded Images Section -->
+    <div id="uploaded-section" class="mb-3" style="display: none;">
+        {{ form.uploaded_image_id.label(class="form-label") }}
+        {{ form.uploaded_image_id(class="form-select") }}
+        <div class="form-text">Select from your previously uploaded images</div>
+    </div>
+    
+    <!-- Database Selection Section -->
+    <div id="database-section" class="mb-3" style="display: none;">
+        {{ form.database_image_id.label(class="form-label") }}
+        {{ form.database_image_id(class="form-select") }}
+        <div class="form-text">Select an image from your training dataset</div>
+    </div>
+    
+    {{ form.submit(class="btn btn-success btn-lg") }}
+</form>
+
+<!-- Prediction Results -->
+{% if result %}
+<div class="mt-4 card">
+    <div class="card-header bg-success text-white">
+        <h5>Prediction Result</h5>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-6">
+                {% if result.image_path %}
+                <img src="{{ url_for('static', filename=result.image_path) }}" 
+                     class="img-fluid rounded" alt="Predicted Image" style="max-height: 300px;">
+                {% endif %}
+            </div>
+            <div class="col-md-6">
+                <h3>Predicted Class: <span class="badge bg-primary fs-4">{{ result.prediction }}</span></h3>
+                {% if result.confidence %}
+                <p>Confidence: 
+                    <span class="badge bg-{{ 'success' if result.confidence > 0.8 else 'warning' if result.confidence > 0.6 else 'danger' }}">
+                        {{ "%.1f"|format(result.confidence * 100) }}%
+                    </span>
+                </p>
+                {% endif %}
+                <p><strong>Model Used:</strong> {{ result.model_name }}</p>
+                <p><strong>Model Type:</strong> {{ result.model_type|replace('_', ' ')|title }}</p>
+                
+                {% if result.actual_class is not none %}
+                <p><strong>Actual Class:</strong> {{ result.actual_class }}
+                    {% if result.prediction == result.actual_class %}
+                        <span class="badge bg-success"><i class="fas fa-check"></i> Correct!</span>
+                    {% else %}
+                        <span class="badge bg-danger"><i class="fas fa-times"></i> Incorrect</span>
+                    {% endif %}
+                </p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+function togglePredictionType() {
+    const predictionType = document.querySelector('select[name="prediction_type"]').value;
+    const uploadSection = document.getElementById('upload-section');
+    const uploadedSection = document.getElementById('uploaded-section');
+    const databaseSection = document.getElementById('database-section');
+    
+    // Hide all sections
+    uploadSection.style.display = 'none';
+    uploadedSection.style.display = 'none';
+    databaseSection.style.display = 'none';
+    
+    // Show selected section
+    if (predictionType === 'upload') {
+        uploadSection.style.display = 'block';
+    } else if (predictionType === 'uploaded') {
+        uploadedSection.style.display = 'block';
+    } else if (predictionType === 'database') {
+        databaseSection.style.display = 'block';
+    }
+}
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', function() {
+    togglePredictionType();
+});
+</script>
+{% endblock %}
