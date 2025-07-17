@@ -9,10 +9,10 @@ class Config:
     SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL2') or \
         'sqlite:///' + os.path.join(basedir, '..', 'app.db')
     SQLALCHEMY_TRACK_MODIFICATIONS = False
-    UPLOAD_FOLDER = os.path.join(basedir, '..', 'uploads')
+    UPLOAD_FOLDER = os.path.join(basedir, '..', 'app.static.uploads')
     if not os.path.exists(UPLOAD_FOLDER):
         os.makedirs(UPLOAD_FOLDER)
-    CHARTS_FOLDER = os.path.join(basedir, '..', 'charts')
+    CHARTS_FOLDER = os.path.join(basedir, '..', 'app.static.charts')
     if not os.path.exists(CHARTS_FOLDER):
         os.makedirs(CHARTS_FOLDER)
     
